@@ -1,2 +1,4 @@
-# google_project_ttestanalysis_07042021
-Google - Project - T Test Analysis - 07042021
+# ABOUT
+
+- Google - Project - T Test Analysis - 07042021
+- Published: https://rpubs.com/cxh190001

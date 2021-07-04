@@ -1,0 +1,132 @@
+---
+title: "CODE"
+author: "Chun-Li Hou"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    theme: united
+    highlight: tango
+---
+
+```{r setup, include = F}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, 
+                      warning = FALSE, fig.align = "center")
+```
+
+# Introduction
+
+...
+
+# Preparation
+
+## Environment
+
+```{r}
+if(!require("pacman")) install.packages("pacman")
+pacman::p_load(dplyr, kableExtra, skimr, ggplot2, GGally, ggsci)
+theme = theme_bw() +
+  theme(plot.title = element_text(face = "bold", size = (15)),
+        plot.subtitle = element_text(size = (10)),
+        axis.title = element_text(size = (10))) +
+  theme(axis.text.x = element_text(angle = 0), legend.position = "none")
+```
+
+Let us set up the working environment and be ready for the analysis.
+
+## Dataset
+
+```{r}
+df = read.csv("DATA.csv",
+              stringsAsFactors = T)
+df$LandID = as.factor(df$LandID)
+df %>% 
+  kbl(align = "c",
+      caption = "Sugarbeets Yield on Herbicide Environment Dataset") %>% 
+  kable_classic("hover", "bordered", "striped")
+```
+
+Two kinds of sugar beet plant on five different lands separately. Both have been producing relatively similar yields historically. As sprayed lands with the herbicide last month, both of the sugar beets are still yielding but some differences have been noticed.
+
+```{r}
+skim_without_charts(df)
+```
+
+Here is the summary of the dataset.
+
+```{r}
+ggpairs(df,
+        aes(color = Variety)) +
+  theme +
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank()) +
+  scale_fill_locuszoom()
+```
+
+The ensemble plot can tell the distribution and structure in yield with different groups. It appears that the statistics of Merlin variety is doing better than the Golden variety. We will apply statistical tests to prove the statistical difference or not.
+
+# Statistical Analysis
+
+## Two sample t-tests
+
+```{r}
+a = c("Student’s two sample t-test",
+      "Welch’s t-test",
+      "Paired t-test",
+      "Wilcoxon Matched Pairs",
+      "Mann Whitney test")
+b = c("v", "v", "v", "x", "x")
+c = c("x", "x", "v", "v", "x")
+d = c("v", "x", "\\-", "\\-", "\\-")
+
+data.frame(a, b, c, d) %>% 
+  rename("Two sample t-tests" = "a",
+         "Normally distributed?" = "b",
+         "Paired?" = "c",
+         "Equal variance?" = "d") %>% 
+  kbl(align = "l",
+      caption = "v: Yes, x: No, -: Not required") %>% 
+  kable_classic("hover", "bordered", "striped")
+```
+
+The table summarizes the three conditions to be fulfilled before deciding which t-test to use.
+
+1. Are both variables normally distributed?
+2. Are the samples in a paired trial? Commonly known as before/after sample objects experiencing two conditions.
+3. Do they have equal variance?
+
+We can apply additional tests for 1 and 3. Whereas for 2, we can only decide based on the experimental design for sampling.
+
+## Shapiro-wilk test of normality
+
+- Null hypothesis (H0): normally distributed
+- Alternative hypothesis (H1): not normally distributed
+
+```{r}
+by(df$Yield, df$Variety, shapiro.test)
+```
+
+P-value of both Golden and Merlin sugar beet varieties show that the results are not significant and thus we can not reject H0 and accept H0, in which both yields of Golden and Merlin are normally distributed.
+
+As long as one variable is not normally distributed, the result of this text is considered not normally distributed.
+
+
+
+## Deciding are the samples paired
+
+## Levene’s test for homogeneity of variance
+
+## Student’s two sample t-test
+
+# Conclusion
+
+...
+
+# Reference
+
+- [Statistical Analysis / 2021 / Kar Ng](https://t.ly/ZOO7)
