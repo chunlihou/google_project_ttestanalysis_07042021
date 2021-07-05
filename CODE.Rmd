@@ -1,5 +1,5 @@
 ---
-title: "CODE"
+title: "T Test Analysis"
 author: "Chun-Li Hou"
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 output: 
@@ -19,7 +19,7 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE,
 
 # Introduction
 
-...
+In this study, we can practice the knowledge about the t-test from assumption identified to hypothesis established.
 
 # Preparation
 
@@ -27,7 +27,7 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE,
 
 ```{r}
 if(!require("pacman")) install.packages("pacman")
-pacman::p_load(dplyr, kableExtra, skimr, ggplot2, GGally, ggsci)
+pacman::p_load(dplyr, kableExtra, skimr, ggplot2, GGally, ggsci, car)
 theme = theme_bw() +
   theme(plot.title = element_text(face = "bold", size = (15)),
         plot.subtitle = element_text(size = (10)),
@@ -59,20 +59,23 @@ Here is the summary of the dataset.
 
 ```{r}
 ggpairs(df,
-        aes(color = Variety)) +
+        columns = c("Yield", "Variety", "LandID"),
+        aes(color = Variety,
+            alpha = 0.5)) +
   theme +
   theme(axis.text.x = element_blank(),
         axis.text.y = element_blank(),
         axis.ticks.x = element_blank(),
         axis.ticks.y = element_blank()) +
-  scale_fill_locuszoom()
+  scale_fill_locuszoom() +
+  labs(caption = "RD: Merlin\nOG: Golden")
 ```
 
 The ensemble plot can tell the distribution and structure in yield with different groups. It appears that the statistics of Merlin variety is doing better than the Golden variety. We will apply statistical tests to prove the statistical difference or not.
 
 # Statistical Analysis
 
-## Two sample t-tests
+## Two sample t-test
 
 ```{r}
 a = c("Student’s two sample t-test",
@@ -102,7 +105,7 @@ The table summarizes the three conditions to be fulfilled before deciding which 
 
 We can apply additional tests for 1 and 3. Whereas for 2, we can only decide based on the experimental design for sampling.
 
-## Shapiro-wilk test of normality
+### Shapiro-wilk test of normality
 
 - Null hypothesis (H0): normally distributed
 - Alternative hypothesis (H1): not normally distributed
@@ -115,17 +118,89 @@ P-value of both Golden and Merlin sugar beet varieties show that the results are
 
 As long as one variable is not normally distributed, the result of this text is considered not normally distributed.
 
+Thus, normally distributed is checked as v.
 
+### Deciding are the samples paired
 
-## Deciding are the samples paired
+Paired sampling is before/after the experiment. Data are measured in one object. This is not the sampling or experiment way of this dataset collecting.
 
-## Levene’s test for homogeneity of variance
+Thus, data paired is checked as x.
 
-## Student’s two sample t-test
+### Bartlett's test for homogeneity of variance
+
+- Null hypothesis (H0): variances are equal
+- Alternative hypothesis (H1): variances are not equal
+
+```{r}
+bartlett.test(data = df, Yield ~ Variety)
+```
+
+Bartlett's test is used for testing the homogeneity of variances. It is adapted for normally distributed data.
+
+```{r}
+leveneTest(data = df, Yield ~ Variety)
+```
+
+Levene's test is a more robust alternative to Bartlett's test when the distributions of the data are non-normal.
+
+In this case, we will take Bartlett's test result due to normally distributed data. P-value as greater than 0.05, we can not reject H0 and accept H0, which assumes variances are equal.
+
+Thus, equal variance is checked as v.
+
+### Student’s two sample t-test
+
+1. Normally distributed? - v
+2. Data paired? - x
+3. Equal variance? - v
+
+It is clearly that the assumption of student's two sample t-test is fulfilled, and this will be used to computed to test the statistical differences between its data.
+
+```{r}
+t.test(df$Yield ~ df$Variety, var.equal = T)
+```
+
+It is the student's two sample t-test from R. It shows that the mean value of Merlin is higher than Golden in a significant difference as p-value < 0.05. We can reject H0 and accept H1, which there is a significant difference between Merlin and Golden.
+
+In detail, this is a two tail two sample student's t-test. As two tail, the hypothesis is that means is/not equal.
+
+If having a more specific purpose for the test, we can set up one tail test, which the hypothesis is that means is/not greater/lesser.
+
+```{r}
+t.test(df$Yield ~ df$Variety, var.equal = T,
+       alternative = "less")
+```
+
+So, in this way, the difference in means (Golden - Merlin) is statistically difference less than 0 as p-value < 0.05. The p-value is only half of the two tail test.
+
+![](PIC.JPG)
+
+## One sample t-test
+
+### Assumpted Merlin as population
+
+```{r}
+mer = df %>% filter(Variety == "Merlin") %>% select(Yield) %>% colMeans() %>% unname()
+gol = df %>% filter(Variety == "Golden") %>% select(Yield)
+t.test(gol, mu = mer, var.equal = T,
+       alternative = "less")
+```
+
+In this example, we know that Golden yield in our sample is statistically lower than our assumpted population parameter mean (47.4) due to p-value < 0.05.
+
+### Assumpted Golden as population
+
+```{r}
+mer = df %>% filter(Variety == "Merlin") %>% select(Yield)
+gol = df %>% filter(Variety == "Golden") %>% select(Yield) %>% colMeans() %>% unname()
+t.test(mer, mu = gol, var.equal = T,
+       alternative = "greater")
+```
+
+In this example, we know that Merlin yield in our sample is statistically higher than our assumpted population parameter mean (34.85) due to p-value < 0.05.
 
 # Conclusion
 
-...
+If Merlin production is the usual production rate of the farm, we said that production of both varieties was somewhat equal before herbicide application. Keeping all other environmental and human factors equal, we may say the reduction of Golden variety could be due to herbicide application with the support of the statistical results.
 
 # Reference
 
